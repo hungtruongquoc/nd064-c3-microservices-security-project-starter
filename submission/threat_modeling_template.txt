@@ -43,6 +43,18 @@ From the failed findings, the following three findings from the Docker-bench res
         Implement a non-root user in the Dockerfile.
         Use USER directive to drop privileges within the container.
         Enforce least privilege access in role-based access controls.
+    Implementation detail:
+        Add to Dockerfile:
+        # Create a non-root user and switch to it
+        RUN useradd -m -s /bin/bash appuser
+        USER appuser
+
+        # Set environment variables (best practice)
+        ENV HOME=/home/appuser
+
+        # **Fix 1: Read-only Root Filesystem**
+        VOLUME ["/app"]
+        RUN chmod -R 755 /app
 
 2. No Memory or CPU Restrictions (5.10, 5.11)
     Threat Addressed: Excessive Host Privileges (Denial of Service)
@@ -51,6 +63,14 @@ From the failed findings, the following three findings from the Docker-bench res
         Configure resource limits in the Dockerfile and runtime.
         Set --memory and --cpu-shares constraints when running the container.
         Implement cgroup policies to control resource usage.
+    Implementation detail:
+        Run container with additional flags:
+            docker run --platform linux/amd64 -d \
+              --memory=512m --cpu-shares=256 --pids-limit=100 \
+              --restart=on-failure:5 \
+              --read-only \
+              --security-opt no-new-privileges \
+              --name suse_test_container suse_docker_env
 
 3. No Health Check Configured (5.26)
     Threat Addressed: Lack of Immutable Storage (Repudiation)
@@ -59,5 +79,8 @@ From the failed findings, the following three findings from the Docker-bench res
         Implement proper HEALTHCHECK instructions in the Dockerfile.
         Use monitoring tools to track container health.
         Configure automatic restarts for failing containers.
+    Implementation detail:
+        Add to Dockerfile:
+            HEALTHCHECK --interval=30s --timeout=10s --retries=3 CMD test -f /app/healthcheck || exit 1
 
 By addressing these vulnerabilities, we enhance the security posture of the suse_test_container, mitigating risks associated with unauthorized access, resource abuse, and system instability.
