@@ -1,0 +1,63 @@
+Docker Threat Modeling
+	1.	Unauthorized Container Access (Elevation of Privilege)
+	•	Attackers gaining root access through a misconfigured or privileged container.
+	•	Exploiting weak access controls and capabilities.
+	2.	Container Image Tampering (Tampering)
+	•	An attacker modifies an image before deployment.
+	•	Pulling images from an untrusted registry.
+	3.	Unrestricted Docker Daemon API (Spoofing)
+	•	Misconfigured Docker API exposed to the public.
+	•	Attackers gaining control of the host system.
+	4.	Lack of Immutable Storage (Repudiation)
+	•	Logs within containers are not persistent.
+	•	Attackers can erase traces of their actions.
+	5.	Excessive Host Privileges (Denial of Service)
+	•	Running containers with --privileged mode.
+	•	Attacker crashes the host by exploiting a misconfigured container.
+
+Kubernetes Threat Modeling
+	1.	Kubernetes API Server Misconfigurations (Tampering)
+	•	Attackers modifying cluster settings via misconfigured RBAC.
+	•	Exploiting excessive permissions.
+	2.	etcd Information Disclosure (Information Disclosure)
+	•	etcd stores cluster secrets in plaintext.
+	•	If compromised, attackers gain full access to cluster configurations.
+	3.	Compromised Worker Nodes (Elevation of Privilege)
+	•	Attackers exploiting weak security on worker nodes.
+	•	Unauthorized access to workloads and data.
+	4.	Pod-to-Pod Network Eavesdropping (Spoofing)
+	•	Lack of network policies allows lateral movement.
+	•	Attackers intercept sensitive data between pods.
+	5.	Unrestricted Kubernetes Dashboard Access (Denial of Service)
+	•	Publicly exposed Kubernetes dashboard.
+	•	Attackers overwhelming the cluster by creating excessive workloads.
+
+Docker-bench Run Results and Analysis
+
+From the failed findings, the following three findings from the Docker-bench results have been selected for hardening, based on the vulnerabilities identified in `suse_test_container`:
+
+1. Running as Root (4.1)
+    Threat Addressed: Unauthorized Container Access (Elevation of Privilege)
+    Issue: The container is running as root, increasing the risk of privilege escalation.
+    Hardening Measures:
+        Implement a non-root user in the Dockerfile.
+        Use USER directive to drop privileges within the container.
+        Enforce least privilege access in role-based access controls.
+
+2. No Memory or CPU Restrictions (5.10, 5.11)
+    Threat Addressed: Excessive Host Privileges (Denial of Service)
+    Issue: The container does not have memory or CPU limits, which could lead to resource exhaustion attacks.
+    Hardening Measures:
+        Configure resource limits in the Dockerfile and runtime.
+        Set --memory and --cpu-shares constraints when running the container.
+        Implement cgroup policies to control resource usage.
+
+3. No Health Check Configured (5.26)
+    Threat Addressed: Lack of Immutable Storage (Repudiation)
+    Issue: The container does not have a health check configured, making it difficult to detect failures and unexpected behavior.
+    Hardening Measures:
+        Implement proper HEALTHCHECK instructions in the Dockerfile.
+        Use monitoring tools to track container health.
+        Configure automatic restarts for failing containers.
+
+By addressing these vulnerabilities, we enhance the security posture of the suse_test_container, mitigating risks associated with unauthorized access, resource abuse, and system instability.
